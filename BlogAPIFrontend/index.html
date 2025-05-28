@@ -11,7 +11,7 @@
   <!-- Navbar -->
   <nav class="bg-white shadow-md px-6 py-4 flex justify-between items-center z-10 relative">
     <h1 onclick="window.location.href='index.html'" class="text-xl font-bold text-blue-600 cursor-pointer hover:underline">MahmutSözlük</h1>
-    <div id="navbar-actions" class="space-x-4"></div>
+    <div id="navbar-actions" class="space-x-4 flex items-center gap-4"></div>
   </nav>
 
   <div class="flex min-h-screen mt-2">
@@ -31,24 +31,30 @@
     const token = localStorage.getItem("token");
     const navbar = document.getElementById("navbar-actions");
 
+    const searchBar = `
+      <input type="text" id="searchInput" placeholder="Ara..." 
+        class="px-2 py-1 border rounded text-sm focus:outline-none focus:ring focus:border-blue-300" 
+        onkeydown="handleSearch(event)" />
+    `;
+
     if (token) {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
         const fullName = payload.fullName || payload.name || "Kullanıcı";
 
         navbar.innerHTML = `
+          ${searchBar}
           <span class="text-gray-700">👋 Hoş geldin, ${fullName}</span>
           <button onclick="window.location.href='my-posts.html'" class="text-blue-600 hover:underline">Gönderilerim</button>
           <button onclick="window.location.href='create-post.html'" class="text-blue-600 hover:underline">+ Yeni Post</button>
-          <!-- 👇 Profilim butonu eklendi -->
           <button onclick="window.location.href='profile.html'" class="text-blue-600 hover:underline">Profilim</button>
           <button onclick="logout()" class="text-blue-600 hover:underline">Çıkış Yap</button>
         `;
       } catch {
-        navbar.innerHTML = loginButtons();
+        navbar.innerHTML = searchBar + loginButtons();
       }
     } else {
-      navbar.innerHTML = loginButtons();
+      navbar.innerHTML = searchBar + loginButtons();
     }
 
     function loginButtons() {
@@ -61,6 +67,24 @@
     function logout() {
       localStorage.removeItem("token");
       window.location.href = "index.html";
+    }
+
+    async function handleSearch(event) {
+      if (event.key === "Enter") {
+        const query = event.target.value.trim();
+        if (!query) return;
+
+        try {
+          const res = await fetch(`http://localhost:5095/api/search?query=${encodeURIComponent(query)}`);
+          const results = await res.json();
+
+          console.log("🔍 Arama sonuçları:", results);
+          alert(`🔍 ${results.length} sonuç bulundu! (detaylar konsola yazıldı)`);
+        } catch (error) {
+          console.error("Arama hatası:", error);
+          alert("❌ Arama yapılırken bir hata oluştu.");
+        }
+      }
     }
 
     async function loadLatestTopicAndTopics() {
@@ -98,7 +122,6 @@
         return;
       }
 
-      // Sıralama: en eski en üstte, en yeni en altta
       posts.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 
       posts.forEach(post => {
