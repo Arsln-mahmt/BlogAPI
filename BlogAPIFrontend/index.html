@@ -10,7 +10,7 @@
 
   <!-- Navbar -->
   <nav class="bg-white shadow-md px-6 py-4 flex justify-between items-center z-10 relative">
-   <h1 onclick="window.location.href='index.html'" class="text-xl font-bold text-blue-600 cursor-pointer hover:underline">MahmutSözlük</h1>
+    <h1 onclick="window.location.href='index.html'" class="text-xl font-bold text-blue-600 cursor-pointer hover:underline">MahmutSözlük</h1>
     <div id="navbar-actions" class="space-x-4"></div>
   </nav>
 
@@ -40,6 +40,8 @@
           <span class="text-gray-700">👋 Hoş geldin, ${fullName}</span>
           <button onclick="window.location.href='my-posts.html'" class="text-blue-600 hover:underline">Gönderilerim</button>
           <button onclick="window.location.href='create-post.html'" class="text-blue-600 hover:underline">+ Yeni Post</button>
+          <!-- 👇 Profilim butonu eklendi -->
+          <button onclick="window.location.href='profile.html'" class="text-blue-600 hover:underline">Profilim</button>
           <button onclick="logout()" class="text-blue-600 hover:underline">Çıkış Yap</button>
         `;
       } catch {

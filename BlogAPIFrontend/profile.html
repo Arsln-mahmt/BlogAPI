@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Profilim</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans min-h-screen">
+
+  <!-- Navbar -->
+  <nav class="bg-white shadow-md px-6 py-4 flex justify-between items-center">
+    <h1 onclick="window.location.href='index.html'" class="text-xl font-bold text-blue-600 cursor-pointer hover:underline">MahmutSözlük</h1>
+    <div class="space-x-4">
+      <button onclick="window.location.href='index.html'" class="text-blue-600 hover:underline">Anasayfa</button>
+      <button onclick="logout()" class="text-blue-600 hover:underline">Çıkış Yap</button>
+    </div>
+  </nav>
+
+  <div class="max-w-2xl mx-auto mt-10 p-6 bg-white shadow-md rounded">
+    <h2 class="text-2xl font-bold text-blue-600 mb-6 text-center">Profilim</h2>
+    <div id="userInfo" class="space-y-4">
+      <!-- JS ile doldurulacak -->
+    </div>
+    <div class="mt-6 text-center">
+      <button onclick="window.location.href='change-password.html'" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Şifremi Değiştir</button>
+    </div>
+  </div>
+
+  <script>
+    const token = localStorage.getItem("token");
+    const payload = token ? JSON.parse(atob(token.split('.')[1])) : null;
+
+    function logout() {
+      localStorage.removeItem("token");
+      window.location.href = "index.html";
+    }
+
+    if (!payload) {
+      document.getElementById("userInfo").innerHTML = "<p class='text-red-500'>Giriş yapmadınız. Lütfen tekrar giriş yapın.</p>";
+    } else {
+      const fullName = payload.fullName || "-";
+      const email = payload.email || payload["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"] || "-";
+
+      document.getElementById("userInfo").innerHTML = `
+        <div>
+          <strong>Ad Soyad:</strong> ${fullName}
+        </div>
+        <div>
+          <strong>Email:</strong> ${email}
+        </div>
+      `;
+    }
+  </script>
+
+</body>
+</html>
