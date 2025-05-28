@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Kayıt Ol</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans min-h-screen">
+
+  <!-- Navbar -->
+  <nav class="bg-white shadow-md px-6 py-4 flex justify-between items-center">
+    <h1 onclick="window.location.href='index.html'" class="text-xl font-bold text-blue-600 cursor-pointer hover:underline">MahmutSözlük</h1>
+    <div>
+      <button onclick="window.location.href='login.html'" class="text-blue-600 hover:underline">Giriş Yap</button>
+      <button onclick="window.location.href='register.html'" class="text-blue-600 hover:underline ml-4">Kayıt Ol</button>
+    </div>
+  </nav>
+
+  <!-- Gövde -->
+  <div class="flex justify-center items-center py-16">
+    <div class="bg-white p-8 rounded shadow w-full max-w-md">
+      <h2 class="text-xl font-bold mb-4 text-center">Kayıt Ol</h2>
+
+      <div class="flex gap-4 mb-4">
+        <input type="text" id="firstName" placeholder="Ad" class="w-1/2 p-3 border rounded" />
+        <input type="text" id="lastName" placeholder="Soyad" class="w-1/2 p-3 border rounded" />
+      </div>
+      <input type="email" id="email" placeholder="Email" class="w-full p-3 border rounded mb-4" />
+      <input type="password" id="password" placeholder="Şifre" class="w-full p-3 border rounded mb-4" />
+      <input type="password" id="confirmPassword" placeholder="Şifre Tekrar" class="w-full p-3 border rounded mb-4" />
+
+      <button onclick="register()" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">Kayıt Ol</button>
+
+      <p class="text-center mt-4">Zaten hesabınız var mı? <a href="login.html" class="text-blue-600 hover:underline">Giriş Yap</a></p>
+      <div id="error" class="text-red-500 text-sm mt-2"></div>
+    </div>
+  </div>
+
+  <script>
+    async function register() {
+      const firstName = document.getElementById("firstName").value.trim();
+      const lastName = document.getElementById("lastName").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value.trim();
+      const confirmPassword = document.getElementById("confirmPassword").value.trim();
+      const errorDiv = document.getElementById("error");
+
+      if (!firstName || !lastName || !email || !password || !confirmPassword) {
+        errorDiv.textContent = "Tüm alanları doldurun.";
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        errorDiv.textContent = "Şifreler uyuşmuyor.";
+        return;
+      }
+
+      const fullName = `${firstName} ${lastName}`;
+
+      try {
+        const response = await fetch("http://localhost:5093/api/Auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fullName, email, password })
+        });
+
+        if (!response.ok) {
+          const err = await response.text();
+          throw new Error(err || "Kayıt başarısız.");
+        }
+
+        alert("Kayıt başarılı! Giriş yapabilirsiniz.");
+        window.location.href = "login.html";
+      } catch (err) {
+        errorDiv.textContent = err.message;
+      }
+    }
+  </script>
+</body>
+</html>

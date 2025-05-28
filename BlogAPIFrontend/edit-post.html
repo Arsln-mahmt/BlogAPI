@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Post Düzenle</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans min-h-screen">
+
+  <!-- 🔵 Navbar -->
+  <nav class="bg-white shadow-md px-6 py-4 flex justify-between items-center">
+   <h1 onclick="window.location.href='index.html'" class="text-xl font-bold text-blue-600 cursor-pointer hover:text-blue-800 transition">MahmutSözlük</h1>
+
+    <div class="space-x-4">
+      <button onclick="window.location.href='index.html'" class="text-blue-600 hover:underline">Ana Sayfa</button>
+      <button onclick="window.location.href='create-post.html'" class="text-blue-600 hover:underline">+ Yeni Post</button>
+      <button onclick="logout()" class="text-blue-600 hover:underline">Çıkış Yap</button>
+    </div>
+  </nav>
+
+  <!-- Token çözüm -->
+  <script>
+    const token = localStorage.getItem("token");
+    if (!token) {
+      window.location.href = "login.html";
+    }
+
+    function logout() {
+      localStorage.removeItem("token");
+      window.location.href = "index.html";
+    }
+
+    let currentUserId = null;
+    let currentUserRole = null;
+
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      currentUserId = payload["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"];
+      currentUserRole = payload["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
+    } catch (e) {
+      console.error("Token çözümlenemedi:", e);
+    }
+  </script>
+
+  <div class="max-w-xl mx-auto bg-white p-8 mt-10 rounded shadow">
+    <h2 class="text-xl font-bold mb-4 text-center text-blue-600">İçerik Düzenle</h2>
+
+    <!-- Başlık gösterilir ama değiştirilemez -->
+    <input type="text" id="title" class="w-full p-3 border rounded mb-4 bg-gray-100 cursor-not-allowed" readonly />
+
+    <!-- Sadece içerik düzenlenebilir -->
+    <textarea id="content" rows="6" placeholder="İçeriği güncelleyin..." class="w-full p-3 border rounded mb-4"></textarea>
+
+    <button onclick="updatePost()" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">Güncelle</button>
+    <div id="message" class="text-green-600 text-center mt-4"></div>
+  </div>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const postId = urlParams.get("id");
+
+    async function loadPost() {
+      try {
+        const res = await fetch(`http://localhost:5093/api/Post/${postId}`, {
+          headers: {
+            "Authorization": "Bearer " + token
+          }
+        });
+
+        if (!res.ok) {
+          alert("Post getirilemedi.");
+          return;
+        }
+
+        const post = await res.json();
+
+        if (
+          String(post.userId).toLowerCase() !== String(currentUserId).toLowerCase()
+          && currentUserRole !== "Admin"
+        ) {
+          alert("Bu postu düzenleme yetkiniz yok.");
+          window.location.href = "index.html";
+          return;
+        }
+
+        document.getElementById("title").value = post.title;
+        document.getElementById("content").value = post.content;
+
+      } catch (err) {
+        alert("Hata oluştu: " + err.message);
+      }
+    }
+
+    async function updatePost() {
+      const content = document.getElementById("content").value.trim();
+
+      if (!content) {
+        alert("İçerik boş olamaz.");
+        return;
+      }
+
+      const res = await fetch(`http://localhost:5093/api/Post/${postId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify({ content })
+      });
+
+      if (res.ok) {
+        document.getElementById("message").textContent = "İçerik güncellendi.";
+        setTimeout(() => {
+          // ✅ Güncelleme sonrası gönderilerime dön
+          window.location.href = "my-posts.html";
+        }, 1000);
+      } else {
+        alert("Güncelleme başarısız.");
+      }
+    }
+
+    loadPost();
+  </script>
+</body>
+</html>

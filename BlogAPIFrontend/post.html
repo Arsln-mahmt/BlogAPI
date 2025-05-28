@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Post Detayı</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans min-h-screen flex items-center justify-center">
+
+    <div class="bg-white p-8 rounded shadow w-full max-w-2xl">
+        <h2 id="postTitle" class="text-2xl font-bold mb-4 text-blue-600">Yükleniyor...</h2>
+        <p id="postContent" class="text-gray-800 mb-4"></p>
+        <p id="postMeta" class="text-sm text-gray-500 italic mt-2"></p>
+
+        <div id="postActions" class="mt-6 hidden">
+            <button onclick="editPost()" class="bg-yellow-400 text-white px-4 py-2 rounded mr-2 hover:bg-yellow-500">Düzenle</button>
+            <button onclick="deletePost()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">Sil</button>
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const postId = urlParams.get("id");
+        const token = localStorage.getItem("token");
+        let currentUserId = null;
+        let currentUserRole = null;
+
+        if (token) {
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                currentUserId = payload.sub;
+                currentUserRole = payload.role;
+            } catch (e) {
+                console.error("JWT çözümleme hatası:", e);
+            }
+        }
+
+        async function loadPost() {
+            const res = await fetch(`http://localhost:5093/api/Post/detail/${postId}`);
+            if (!res.ok) {
+                document.getElementById("postTitle").textContent = "Post bulunamadı.";
+                return;
+            }
+
+            const post = await res.json();
+
+            document.getElementById("postTitle").textContent = post.title;
+            document.getElementById("postContent").textContent = post.content;
+
+            const createdDate = new Date(post.createdAt);
+            const formattedDate = createdDate.toLocaleDateString("tr-TR", {
+                day: "2-digit",
+                month: "long",
+                year: "numeric"
+            });
+
+            document.getElementById("postMeta").textContent =
+                `📅 ${formattedDate} — 🖊️ ${post.fullName}`;
+
+            const userIdMatch = post.authorId?.toString() === currentUserId?.toString();
+
+            if (token && userIdMatch && currentUserRole === "User") {
+                document.getElementById("postActions").classList.remove("hidden");
+            }
+        }
+
+        async function deletePost() {
+            if (!confirm("Bu postu silmek istediğinize emin misiniz?")) return;
+
+            const res = await fetch(`http://localhost:5093/api/Post/${postId}`, {
+                method: "DELETE",
+                headers: { "Authorization": "Bearer " + token }
+            });
+
+            if (res.ok) {
+                alert("Post silindi.");
+                window.location.href = "index.html";
+            } else {
+                alert("Silme işlemi başarısız.");
+            }
+        }
+
+        function editPost() {
+            window.location.href = `edit-post.html?id=${postId}`;
+        }
+
+        loadPost();
+    </script>
+</body>
+</html>

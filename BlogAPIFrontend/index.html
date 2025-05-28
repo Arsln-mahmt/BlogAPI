@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MahmutSözlük</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+
+  <!-- Navbar -->
+  <nav class="bg-white shadow-md px-6 py-4 flex justify-between items-center z-10 relative">
+   <h1 onclick="window.location.href='index.html'" class="text-xl font-bold text-blue-600 cursor-pointer hover:underline">MahmutSözlük</h1>
+    <div id="navbar-actions" class="space-x-4"></div>
+  </nav>
+
+  <div class="flex min-h-screen mt-2">
+    <!-- SOL: Trend Konular -->
+    <aside class="w-64 bg-white border-r border-gray-200 p-4 pt-6 shadow-sm">
+      <h2 class="text-lg font-semibold mb-4 text-blue-600 border-b pb-2">📌 Trend Konular</h2>
+      <ul id="topicList" class="space-y-2"></ul>
+    </aside>
+
+    <!-- SAĞ: Gönderiler -->
+    <main class="flex-1 px-8 py-6 space-y-6 bg-gray-50" id="postContainer">
+      <!-- JS ile doldurulacak -->
+    </main>
+  </div>
+
+  <script>
+    const token = localStorage.getItem("token");
+    const navbar = document.getElementById("navbar-actions");
+
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const fullName = payload.fullName || payload.name || "Kullanıcı";
+
+        navbar.innerHTML = `
+          <span class="text-gray-700">👋 Hoş geldin, ${fullName}</span>
+          <button onclick="window.location.href='my-posts.html'" class="text-blue-600 hover:underline">Gönderilerim</button>
+          <button onclick="window.location.href='create-post.html'" class="text-blue-600 hover:underline">+ Yeni Post</button>
+          <button onclick="logout()" class="text-blue-600 hover:underline">Çıkış Yap</button>
+        `;
+      } catch {
+        navbar.innerHTML = loginButtons();
+      }
+    } else {
+      navbar.innerHTML = loginButtons();
+    }
+
+    function loginButtons() {
+      return `
+        <button onclick="window.location.href='login.html'" class="text-blue-600 hover:underline">Giriş Yap</button>
+        <button onclick="window.location.href='register.html'" class="text-blue-600 hover:underline">Kayıt Ol</button>
+      `;
+    }
+
+    function logout() {
+      localStorage.removeItem("token");
+      window.location.href = "index.html";
+    }
+
+    async function loadLatestTopicAndTopics() {
+      const allPostsRes = await fetch("http://localhost:5093/api/Post");
+      const allPosts = await allPostsRes.json();
+
+      const topicsRes = await fetch("http://localhost:5093/api/Post/topics");
+      const topics = await topicsRes.json();
+
+      const topicList = document.getElementById("topicList");
+      topicList.innerHTML = "";
+
+      topics.forEach(title => {
+        const li = document.createElement("li");
+        li.innerHTML = `
+          <button onclick="loadPosts('${title}')" class="text-left w-full text-blue-600 hover:underline">${title}</button>
+        `;
+        topicList.appendChild(li);
+      });
+
+      if (allPosts.length > 0) {
+        const latestPost = allPosts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+        loadPosts(latestPost.title);
+      }
+    }
+
+    async function loadPosts(title) {
+      const res = await fetch(`http://localhost:5093/api/Post/by-topic?title=${encodeURIComponent(title)}`);
+      const posts = await res.json();
+      const container = document.getElementById("postContainer");
+
+      container.innerHTML = `<h2 class="text-xl font-bold text-blue-600 mb-4 border-b pb-2">📌 ${title}</h2>`;
+      if (posts.length === 0) {
+        container.innerHTML += `<p class="text-gray-600 italic">Bu başlık altında henüz gönderi yok.</p>`;
+        return;
+      }
+
+      // Sıralama: en eski en üstte, en yeni en altta
+      posts.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+      posts.forEach(post => {
+        const createdDate = new Date(post.createdAt);
+        const formattedDate = createdDate.toLocaleDateString("tr-TR", {
+          day: "2-digit",
+          month: "long",
+          year: "numeric"
+        });
+
+        const div = document.createElement("div");
+        div.className = "bg-white rounded shadow p-6";
+        div.innerHTML = `
+          <p class="text-base text-gray-800 mb-2">${post.content}</p>
+          <p class="text-sm text-gray-500 italic">📅 ${formattedDate} — 🖊️ ${post.user.fullName}</p>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    loadLatestTopicAndTopics();
+  </script>
+</body>
+</html>
