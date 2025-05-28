@@ -25,5 +25,26 @@ namespace SearchService.API.Controllers
             var results = _searchService.SearchPosts(query);
             return Ok(results);
         }
+
+        [HttpGet("suggestions")]
+        public IActionResult GetSuggestions([FromQuery] string query)
+        {
+            if (string.IsNullOrWhiteSpace(query))
+                return Ok(new List<string>());
+
+            var results = _searchService
+                .SearchPosts(query)
+                .Select(p => p.Title)
+                .Where(t => !string.IsNullOrEmpty(t) && t.ToLower().Contains(query.ToLower()))
+                .Distinct()
+                .Take(5)
+                .ToList();
+
+            return Ok(results);
+        }
+
+
+
+
     }
 }

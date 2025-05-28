@@ -1,6 +1,21 @@
-﻿using SearchServiceAPI.Services; // ⬅️ Bu çok önemli!
+﻿using SearchServiceAPI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// 🔐 CORS politikası tanımı
+var MyAllowAllOrigins = "_myAllowAllOrigins";
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(name: MyAllowAllOrigins,
+        policy =>
+        {
+            policy
+                .AllowAnyOrigin()
+                .AllowAnyMethod()
+                .AllowAnyHeader();
+        });
+});
 
 // Servisleri ekle
 builder.Services.AddControllers();
@@ -21,6 +36,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// 🧩 CORS middleware aktif hale getirildi
+app.UseCors(MyAllowAllOrigins);
 
 app.UseAuthorization();
 

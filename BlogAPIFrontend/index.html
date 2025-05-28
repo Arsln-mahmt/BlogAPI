@@ -9,9 +9,9 @@
 <body class="bg-gray-100 font-sans">
 
   <!-- Navbar -->
-  <nav class="bg-white shadow-md px-6 py-4 flex justify-between items-center z-10 relative">
+  <nav class="bg-white shadow-md px-6 py-4 flex flex-col md:flex-row md:justify-between md:items-center z-10 relative gap-4">
     <h1 onclick="window.location.href='index.html'" class="text-xl font-bold text-blue-600 cursor-pointer hover:underline">MahmutSözlük</h1>
-    <div id="navbar-actions" class="space-x-4 flex items-center gap-4"></div>
+    <div id="navbar-actions" class="flex flex-wrap items-center gap-4 w-full md:w-auto relative z-10"></div>
   </nav>
 
   <div class="flex min-h-screen mt-2">
@@ -32,9 +32,25 @@
     const navbar = document.getElementById("navbar-actions");
 
     const searchBar = `
-      <input type="text" id="searchInput" placeholder="Ara..." 
-        class="px-2 py-1 border rounded text-sm focus:outline-none focus:ring focus:border-blue-300" 
-        onkeydown="handleSearch(event)" />
+      <div class="relative w-64 z-50">
+        <div class="flex">
+          <input
+            type="text"
+            id="searchInput"
+            placeholder="Konu ara..."
+            class="w-full px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+            oninput="loadSuggestions(this.value)"
+            onkeydown="handleSearch(event)"
+            autocomplete="off"
+          />
+          <button onclick="manualSearch()" class="px-3 py-2 bg-blue-600 text-white rounded-r-md hover:bg-blue-700">
+            🔍
+          </button>
+        </div>
+        <ul id="suggestionList"
+            class="absolute top-full left-0 w-full bg-white border border-gray-300 rounded-b-md shadow-lg max-h-60 overflow-auto z-50 hidden">
+        </ul>
+      </div>
     `;
 
     if (token) {
@@ -69,23 +85,71 @@
       window.location.href = "index.html";
     }
 
-    async function handleSearch(event) {
+    async function loadSuggestions(query) {
+      const suggestionBox = document.getElementById("suggestionList");
+      if (!query.trim()) {
+        suggestionBox.classList.add("hidden");
+        suggestionBox.innerHTML = "";
+        return;
+      }
+
+      try {
+        const res = await fetch("http://localhost:5093/api/Post/topics");
+        const topics = await res.json();
+
+        const filtered = topics
+          .filter(t => t.toLowerCase().includes(query.toLowerCase()))
+          .slice(0, 5);
+
+        if (filtered.length === 0) {
+          suggestionBox.classList.add("hidden");
+          suggestionBox.innerHTML = "";
+          return;
+        }
+
+        suggestionBox.innerHTML = "";
+        filtered.forEach(title => {
+          const li = document.createElement("li");
+          li.textContent = title;
+          li.className = "px-4 py-2 hover:bg-blue-100 cursor-pointer text-sm text-gray-700";
+          li.onclick = () => {
+            document.getElementById("searchInput").value = title;
+            suggestionBox.classList.add("hidden");
+            loadPosts(title);
+          };
+          suggestionBox.appendChild(li);
+        });
+
+        suggestionBox.classList.remove("hidden");
+      } catch (error) {
+        console.error("❌ Öneri hatası:", error);
+      }
+    }
+
+    function handleSearch(event) {
       if (event.key === "Enter") {
         const query = event.target.value.trim();
         if (!query) return;
-
-        try {
-          const res = await fetch(`http://localhost:5095/api/search?query=${encodeURIComponent(query)}`);
-          const results = await res.json();
-
-          console.log("🔍 Arama sonuçları:", results);
-          alert(`🔍 ${results.length} sonuç bulundu! (detaylar konsola yazıldı)`);
-        } catch (error) {
-          console.error("Arama hatası:", error);
-          alert("❌ Arama yapılırken bir hata oluştu.");
-        }
+        document.getElementById("suggestionList").classList.add("hidden");
+        loadPosts(query);
       }
     }
+
+    function manualSearch() {
+      const input = document.getElementById("searchInput");
+      const query = input.value.trim();
+      if (!query) return;
+      document.getElementById("suggestionList").classList.add("hidden");
+      loadPosts(query);
+    }
+
+    document.addEventListener("click", function (e) {
+      const suggestionBox = document.getElementById("suggestionList");
+      const input = document.getElementById("searchInput");
+      if (suggestionBox && !input.contains(e.target)) {
+        suggestionBox.classList.add("hidden");
+      }
+    });
 
     async function loadLatestTopicAndTopics() {
       const allPostsRes = await fetch("http://localhost:5093/api/Post");
